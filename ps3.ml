@@ -72,9 +72,9 @@ let randbignum (bound: bignum) =
   let randbase = List.map (fun _ -> Random.int base) in
   let rec randbignum_rec (bound: int list) =
     match bound with
-      | [] -> []
-      | h::t -> let r = Random.int (h+1) in
-          r::((if r = h then randbignum_rec else randbase) t)
+    | [] -> []
+    | h::t -> let r = Random.int (h+1) in
+              r::((if r = h then randbignum_rec else randbase) t)
   in {neg = false; coeffs = stripzeroes (randbignum_rec bound.coeffs)} ;;
        
 (* explode -- Splits a string into a list of its characters. *)
@@ -86,24 +86,24 @@ let rec explode (s : string) : char list =
 (* implode -- Condenses a list of characters into a string. *)
 let rec implode (cs : char list) : string =
   match cs with
-    | [] -> ""
-    | c :: t -> String.make 1 c ^ implode t ;;
+  | [] -> ""
+  | c :: t -> String.make 1 c ^ implode t ;;
 					  
 (* take_first -- Returns the first n elements of list l (or the whole
    list if too short) *)
 let rec take_first (l : 'a list) (n : int) : 'a list =
   match l with
-    | [] -> []
-    | h :: t -> if n <= 0 then [] else h :: take_first t (n - 1) ;;
+  | [] -> []
+  | h :: t -> if n <= 0 then [] else h :: take_first t (n - 1) ;;
 
 (* split -- Returns a pair (first n elements of lst, rest of elements
    of lst) *)
 let rec split lst n =
   if n = 0 then ([], lst)
   else match lst with
-    | [] -> ([], [])
-    | h :: t -> let (lst1, lst2) = split t (n - 1) in
-                (h :: lst1, lst2) ;;
+  | [] -> ([], [])
+  | h :: t -> let (lst1, lst2) = split t (n - 1) in
+              (h :: lst1, lst2) ;;
 
 (* intlog -- Returns the floor of the base 10 log of an integer *)
 let intlog (base : int) : int =
@@ -119,8 +119,9 @@ let fromString (s : string) : bignum =
     int_of_string string_to_convert :: fromString_rec rest
   in
   match explode s with
-    | [] -> fromInt 0
-    | h :: t -> if h = '-' || h = '~' then
+  | [] -> fromInt 0
+  | h :: t ->
+      if h = '-' || h = '~' then
         {neg = true; coeffs = (List.rev (fromString_rec (List.rev t)))}
       else {neg = false;
             coeffs = (stripzeroes (List.rev (fromString_rec (List.rev (h :: t)))))}
@@ -130,8 +131,8 @@ let fromString (s : string) : bignum =
    the base is a power of 10. *)
 let toString (b : bignum) : string =
   let rec pad_with_zeroes_left (s : string) (len : int) =
-    if String.length s >= len then s else
-      "0" ^ pad_with_zeroes_left s (len - 1) in
+    if String.length s >= len then s
+    else "0" ^ pad_with_zeroes_left s (len - 1) in
   let rec stripstrzeroes (s : string) (c : char) =
     if String.length s = 0 then
       "0"
@@ -140,9 +141,9 @@ let toString (b : bignum) : string =
     else s in
   let rec coeffs_to_string (coeffs : int list) : string =
     match coeffs with
-      | [] -> ""
-      | h :: t -> pad_with_zeroes_left (string_of_int h) (intlog base)
-                  ^ coeffs_to_string t in
+    | [] -> ""
+    | h :: t -> pad_with_zeroes_left (string_of_int h) (intlog base)
+                ^ coeffs_to_string t in
   let stripped = stripzeroes b.coeffs in
   if List.length stripped = 0 then "0"
   else let from_coeffs = stripstrzeroes (coeffs_to_string stripped) '0' in
@@ -161,32 +162,34 @@ let plus_pos (b1 : bignum) (b2 : bignum) : bignum =
     else (true, [1])
   in
   let rec plus_with_carry (neg1, coeffs1) (neg2, coeffs2) (carry : int)
-            : bool * int list =
+    : bool * int list =
     match (coeffs1, coeffs2) with
-      | ([], []) -> pair_from_carry carry
-      | ([], _) -> if carry = 0 then (neg2, coeffs2) else
-          plus_with_carry (neg2, coeffs2) (pair_from_carry carry) 0
-      | (_, []) -> if carry = 0 then (neg1, coeffs1) else
-          plus_with_carry (neg1, coeffs1) (pair_from_carry carry) 0
-      | (h1 :: t1, h2 :: t2) ->
-          let (sign1, sign2) =
+    | ([], []) -> pair_from_carry carry
+    | ([], _) ->
+        if carry = 0 then (neg2, coeffs2)
+        else plus_with_carry (neg2, coeffs2) (pair_from_carry carry) 0
+    | (_, []) ->
+        if carry = 0 then (neg1, coeffs1)
+        else plus_with_carry (neg1, coeffs1) (pair_from_carry carry) 0
+    | (h1 :: t1, h2 :: t2) ->
+        let (sign1, sign2) =
             ((if neg1 then -1 else 1), (if neg2 then -1 else 1)) in
-          let result = h1 * sign1 + h2 * sign2 + carry in
-          if result < 0 then
-            let (negres, coeffsres) =
-                  plus_with_carry (neg1, t1) (neg2, t2) (-1)
-            in (negres, result + base :: coeffsres)
-          else if result >= base then
-            let (negres, coeffsres) = plus_with_carry (neg1, t1) (neg2, t2) 1
-            in (negres, result - base :: coeffsres)
-          else
-            let (negres, coeffsres) = plus_with_carry (neg1, t1) (neg2, t2) 0
-            in (negres, result :: coeffsres)
+        let result = h1 * sign1 + h2 * sign2 + carry in
+        if result < 0 then
+          let (negres, coeffsres) =
+              plus_with_carry (neg1, t1) (neg2, t2) (-1)
+          in (negres, result + base :: coeffsres)
+        else if result >= base then
+          let (negres, coeffsres) = plus_with_carry (neg1, t1) (neg2, t2) 1
+          in (negres, result - base :: coeffsres)
+        else
+          let (negres, coeffsres) = plus_with_carry (neg1, t1) (neg2, t2) 0
+          in (negres, result :: coeffsres)
   in
   let (negres, coeffsres) =
-        plus_with_carry (b1.neg, List.rev b1.coeffs)
-                        (b2.neg, List.rev b2.coeffs)
-                        0
+      plus_with_carry (b1.neg, List.rev b1.coeffs)
+                      (b2.neg, List.rev b2.coeffs)
+                      0
   in {neg = negres; coeffs = stripzeroes (List.rev coeffsres)} ;;
 
 (*......................................................................
@@ -247,39 +250,41 @@ problem can be implemented in approximately one line of code.
 let divsing (b : int list) (n : int) : int list * int =
   let rec divsing_rec (b : int list) (r : int) : int list * int =
     match b with
-      | [] -> [], r
-      | h :: t ->
-          let dividend = r * base + h in
-          let quot = dividend / n in
-          let (q, r) = divsing_rec t (dividend-quot * n) in
-          (quot :: q, r) in
-    match b with
-      | [] -> [], 0
-      | [a] -> [a / n], a mod n
-      | h1 :: h2 :: t -> if h1 < n then divsing_rec (h1 * base + h2 ::t) 0
-        else divsing_rec b 0 ;;
+    | [] -> [], r
+    | h :: t ->
+        let dividend = r * base + h in
+        let quot = dividend / n in
+        let (q, r) = divsing_rec t (dividend-quot * n) in
+        (quot :: q, r)
+  in
+  match b with
+  | [] -> [], 0
+  | [a] -> [a / n], a mod n
+  | h1 :: h2 :: t -> if h1 < n then divsing_rec (h1 * base + h2 ::t) 0
+                     else divsing_rec b 0 ;;
 
 (* divmod -- Returns a pair (floor of b1/b2, b1 mod b2), both bignums *)
 let divmod (b1 : bignum) (b2 : bignum): bignum * bignum =
   let rec divmod_rec m n (psum : bignum) : bignum * bignum =
-    if less m n then (psum, m) else
+    if less m n then (psum, m)
+    else
       let mc = m.coeffs in
       let nc = n.coeffs in
       match nc with
-        | [] -> failwith "Division by zero"
-        | ns :: _ -> let (p, _) =
-            if ns + 1 = base then
-              (take_first mc (List.length mc - List.length nc), 0)
-            else
-              let den = ns + 1 in
-              let num = take_first mc (List.length mc - List.length nc + 1)
-              in divsing num den
-          in
-          let bp = clean {neg = false; coeffs = p} in
-          let p2 = clean (if equal bp (fromInt 0) then fromInt 1 else bp) in
-            divmod_rec (clean (plus m (negate (times n p2))))
-                       (clean n)
-                       (clean (plus psum p2))
+      | [] -> failwith "Division by zero"
+      | ns :: _ -> let (p, _) =
+          if ns + 1 = base then
+            (take_first mc (List.length mc - List.length nc), 0)
+          else
+            let den = ns + 1 in
+            let num = take_first mc (List.length mc - List.length nc + 1) in
+            divsing num den
+        in
+        let bp = clean {neg = false; coeffs = p} in
+        let p2 = clean (if equal bp (fromInt 0) then fromInt 1 else bp) in
+        divmod_rec (clean (plus m (negate (times n p2))))
+                   (clean n)
+                   (clean (plus psum p2))
   in
   divmod_rec (clean b1) (clean b2) (fromInt 0) ;;
 
@@ -386,14 +391,14 @@ let encryptDecryptBignum (n : bignum) (e : bignum) (s : bignum) : bignum =
 let rec charsToBignums (lst : char list) (m : int) : bignum list =
   let rec encchars lst =
     match lst with
-      | [] -> (fromInt 0)
-      | c :: t -> clean (plus (times (encchars t) (fromInt 256))
-                              (fromInt (int_of_char c)))
+    | [] -> (fromInt 0)
+    | c :: t -> clean (plus (times (encchars t) (fromInt 256))
+                            (fromInt (int_of_char c)))
   in
     match lst with
-      | [] -> []
-      | _ -> let (enclist, rest) = split lst m in
-             encchars enclist :: charsToBignums rest m
+    | [] -> []
+    | _ -> let (enclist, rest) = split lst m in
+           encchars enclist :: charsToBignums rest m
 
 (* bignumsToChars -- Unpack a list of bignums into chars (reverse of
    charsToBignums) *)
@@ -402,12 +407,12 @@ let rec bignumsToChars (lst : bignum list) : char list =
     if equal b (fromInt 0) then []
     else let (q, r) = divmod b (fromInt 256) in
       match toInt r with
-        | None -> failwith "bignumsToChars: representation invariant broken"
-        | Some ir -> char_of_int ir :: decbignum q
+      | None -> failwith "bignumsToChars: representation invariant broken"
+      | Some ir -> char_of_int ir :: decbignum q
   in
     match lst with
-      | [] -> []
-      | b :: t -> decbignum b @ bignumsToChars t
+    | [] -> []
+    | b :: t -> decbignum b @ bignumsToChars t
 
 (* bytesInKey -- Return the number of bytes required to represent an
    RSA modulus. *)
@@ -419,8 +424,8 @@ let bytesInKey (n : bignum) =
    in n e lst. To decrypt, pass in n d lst. *)
 let rec encDecBignumList (n : bignum) (e : bignum) (lst : bignum list) =
   match lst with
-    | [] -> []
-    | h :: t -> encryptDecryptBignum n e h :: encDecBignumList n e t
+  | [] -> []
+  | h :: t -> encryptDecryptBignum n e h :: encDecBignumList n e t
 
 (*......................................................................
 Challenge Problem 7: Encrypting and decrypting strings
